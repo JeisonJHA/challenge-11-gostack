@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, ScrollView } from 'react-native';
+import { Image, SafeAreaView } from 'react-native';
 
 import Icon from 'react-native-vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
@@ -28,16 +28,17 @@ import {
   FoodPricing,
 } from './styles';
 
-interface Food {
+export interface Food {
   id: number;
   name: string;
+  category: number;
   description: string;
   price: number;
   thumbnail_url: string;
   formattedPrice: string;
 }
 
-interface Category {
+export interface Category {
   id: number;
   title: string;
   image_url: string;
@@ -54,12 +55,33 @@ const Dashboard: React.FC = () => {
   const navigation = useNavigation();
 
   async function handleNavigate(id: number): Promise<void> {
-    // Navigate do ProductDetails page
+    navigation.navigate('FoodDetails', { id });
   }
 
   useEffect(() => {
     async function loadFoods(): Promise<void> {
-      // Load Foods from API
+      let params = {};
+      if (selectedCategory) {
+        params = { category_like: selectedCategory };
+      } else if (searchValue !== '') {
+        params = { name_like: searchValue };
+      }
+
+      api
+        .get<Food[]>('foods', {
+          params,
+        })
+        .then(response => {
+          const orderList = response.data;
+          const formattedData = orderList.map(
+            item =>
+              (({
+                ...item,
+                formattedValue: formatValue(item.price),
+              } as unknown) as Food),
+          );
+          setFoods(formattedData);
+        });
     }
 
     loadFoods();
@@ -67,14 +89,16 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     async function loadCategories(): Promise<void> {
-      // Load categories from API
+      api.get<Category[]>('categories').then(response => {
+        setCategories(response.data);
+      });
     }
 
     loadCategories();
   }, []);
 
   function handleSelectCategory(id: number): void {
-    // Select / deselect category
+    setSelectedCategory(state => (state === id ? undefined : id));
   }
 
   return (
@@ -85,6 +109,7 @@ const Dashboard: React.FC = () => {
           name="log-out"
           size={24}
           color="#FFB84D"
+          style={{ transform: [{ rotate: '-180deg' }] }}
           onPress={() => navigation.navigate('Home')}
         />
       </Header>
@@ -95,17 +120,18 @@ const Dashboard: React.FC = () => {
           placeholder="Qual comida você procura?"
         />
       </FilterContainer>
-      <ScrollView>
+      <SafeAreaView style={{ flex: 1 }}>
         <CategoryContainer>
           <Title>Categorias</Title>
           <CategorySlider
             contentContainerStyle={{
               paddingHorizontal: 20,
             }}
+            data={categories}
+            keyExtractor={item => String(item.id)}
             horizontal
             showsHorizontalScrollIndicator={false}
-          >
-            {categories.map(category => (
+            renderItem={({ item: category }) => (
               <CategoryItem
                 key={category.id}
                 isSelected={category.id === selectedCategory}
@@ -119,13 +145,15 @@ const Dashboard: React.FC = () => {
                 />
                 <CategoryItemTitle>{category.title}</CategoryItemTitle>
               </CategoryItem>
-            ))}
-          </CategorySlider>
+            )}
+          />
         </CategoryContainer>
         <FoodsContainer>
           <Title>Pratos</Title>
-          <FoodList>
-            {foods.map(food => (
+          <FoodList
+            data={foods}
+            keyExtractor={item => String(item.id)}
+            renderItem={({ item: food }) => (
               <Food
                 key={food.id}
                 onPress={() => handleNavigate(food.id)}
@@ -144,10 +172,10 @@ const Dashboard: React.FC = () => {
                   <FoodPricing>{food.formattedPrice}</FoodPricing>
                 </FoodContent>
               </Food>
-            ))}
-          </FoodList>
+            )}
+          />
         </FoodsContainer>
-      </ScrollView>
+      </SafeAreaView>
     </Container>
   );
 };

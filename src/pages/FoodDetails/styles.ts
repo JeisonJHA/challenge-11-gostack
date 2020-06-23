@@ -5,6 +5,23 @@ export const Container = styled.View`
   background: #fff;
 `;
 
+export const Success = styled.View`
+  background: #000;
+  height: 100%;
+  width: 100%;
+  opacity: 0.9;
+  align-items: center;
+  justify-content: center;
+`;
+
+export const SuccesText = styled.Text`
+  font-family: 'Poppins-SemiBold';
+  font-size: 24px;
+  line-height: 28px;
+  color: #fff;
+  margin-top: 30px;
+`;
+
 export const Header = styled.View`
   padding: 40px 24px 20px;
   background: #c72828;
